@@ -1,13 +1,5 @@
-import {
-	App,
-	FrontmatterLinkCache,
-	Plugin,
-	PluginSettingTab,
-	Setting,
-	TFile,
-	WorkspaceLeaf,
-} from "obsidian";
-import { CSVView, CSV_VIEW_TYPE } from "./view";
+import {App, FrontmatterLinkCache, Plugin, PluginSettingTab, Setting, TFile, WorkspaceLeaf} from "obsidian";
+import {CSVView, CSV_VIEW_TYPE} from "./view";
 
 interface MyPluginSettings {
 	csvFolderPath: string;
@@ -30,9 +22,9 @@ class MyPluginSettingTab extends PluginSettingTab {
 	}
 
 	display(): void {
-		let { containerEl } = this;
+		let {containerEl} = this;
 		containerEl.empty();
-		containerEl.createEl("h2", { text: "CSV Folder Settings" });
+		containerEl.createEl("h2", {text: "CSV Folder Settings"});
 
 		new Setting(containerEl)
 			.setName("CSV Folder Path")
@@ -44,7 +36,7 @@ class MyPluginSettingTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.csvFolderPath = value;
 						await this.plugin.saveSettings();
-					})
+					}),
 			);
 	}
 }
@@ -65,10 +57,7 @@ export default class PreviewDataPlugin extends Plugin {
 		const savedLeafState = await this.loadData();
 		if (savedLeafState && savedLeafState.leafId) {
 			const leaves = this.workspace.getLeavesOfType(CSV_VIEW_TYPE);
-			this.csvLeaf =
-				leaves.find(
-					(leaf) => leaf.getViewState() === savedLeafState.leafId
-				) || null;
+			this.csvLeaf = leaves.find((leaf) => leaf.getViewState() === savedLeafState.leafId) || null;
 		}
 
 		this.registerEvent(
@@ -80,7 +69,7 @@ export default class PreviewDataPlugin extends Plugin {
 				if (!(csvFile instanceof TFile)) return;
 
 				await this.setCSVLeafStateAndReveal(csvFile);
-			})
+			}),
 		);
 	}
 
@@ -91,11 +80,7 @@ export default class PreviewDataPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign(
-			{},
-			DEFAULT_SETTINGS,
-			await this.loadData()
-		);
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 	}
 
 	async saveSettings() {
@@ -129,7 +114,7 @@ export default class PreviewDataPlugin extends Plugin {
 		if (this.csvLeaf) {
 			await this.csvLeaf.setViewState({
 				type: CSV_VIEW_TYPE,
-				state: { file: csvFile.path },
+				state: {file: csvFile.path},
 				active: false,
 			});
 			this.workspace.revealLeaf(this.csvLeaf);
@@ -139,9 +124,7 @@ export default class PreviewDataPlugin extends Plugin {
 	getCSVFile(file: TFile) {
 		const cache = this.app.metadataCache.getFileCache(file);
 		if (!cache) return;
-		const firstFrontmatterLink = cache.frontmatterLinks?.find((link) =>
-			link.link.endsWith(".csv")
-		)?.link;
+		const firstFrontmatterLink = cache.frontmatterLinks?.find((link) => link.link.endsWith(".csv"))?.link;
 
 		this.activeFrontmatterLink =
 			cache.frontmatterLinks
@@ -152,13 +135,10 @@ export default class PreviewDataPlugin extends Plugin {
 						fullPath: this.settings.csvFolderPath + link.link,
 					};
 				}) || [];
-		console.log("activeFrontmatterLink", this.activeFrontmatterLink);
 		if (!firstFrontmatterLink) return;
 
-		const csvRelativeFilePath =
-			this.settings.csvFolderPath + firstFrontmatterLink;
-		const csvFile =
-			this.app.vault.getAbstractFileByPath(csvRelativeFilePath);
+		const csvRelativeFilePath = this.settings.csvFolderPath + firstFrontmatterLink;
+		const csvFile = this.app.vault.getAbstractFileByPath(csvRelativeFilePath);
 		return csvFile;
 	}
 }
