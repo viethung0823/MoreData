@@ -1,0 +1,9 @@
+{
+	"id": "more-data-plugin",
+	"name": "More Data",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "An Obsidian Plugin enhances user experencies by providing set of tools to intergrate Obsidian with others file format.",
+	"author": "viethung0823",
+	"isDesktopOnly": true
+}

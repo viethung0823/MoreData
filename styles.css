@@ -1,0 +1,26 @@
+/*
+
+This CSS file will be included with your plugin, and
+available in the app when your plugin is enabled.
+
+If your plugin does not need CSS, delete this file.
+
+*/
+
+.preview-data-plugin .view-header {
+  display: flex !important;
+}
+
+.preview-data-plugin .inline-title {
+  display: none !important;
+}
+
+.linked-csv-files-container {
+  --file-margins: var(--size-4-5);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: var(--file-margins);
+  border-bottom: 2px solid var(--hr-color);
+}
