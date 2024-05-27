@@ -23,4 +23,5 @@ If your plugin does not need CSS, delete this file.
   gap: 10px;
   padding: var(--file-margins);
   border-bottom: 2px solid var(--hr-color);
+  flex-wrap: wrap;
 }
