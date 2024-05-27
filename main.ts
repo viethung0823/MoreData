@@ -1,4 +1,4 @@
-import {App, FrontmatterLinkCache, Plugin, PluginSettingTab, Setting, TFile, WorkspaceLeaf} from "obsidian";
+import {App, CachedMetadata, FrontmatterLinkCache, Plugin, PluginSettingTab, Setting, TFile, WorkspaceLeaf} from "obsidian";
 import {CSVView, CSV_VIEW_TYPE} from "./view";
 
 interface MyPluginSettings {
@@ -46,6 +46,7 @@ export default class PreviewDataPlugin extends Plugin {
 	csvLeaf: WorkspaceLeaf | null = null;
 	workspace = this.app.workspace;
 	activeFrontmatterLink: ExtendedFrontmatterLinkCache[] = [];
+	fileCache: CachedMetadata | null = null;
 
 	async onload() {
 		await this.loadSettings();
@@ -57,6 +58,10 @@ export default class PreviewDataPlugin extends Plugin {
 		this.registerEvent(
 			this.workspace.on("file-open", async (file) => {
 				if (!this.isValidFile(file)) return;
+				this.fileCache = this.getFileCache(file as TFile);
+				if (!this.fileCache) return;
+				this.activeFrontmatterLink = this.getFrontmatterLinks(file as TFile);
+				if (!this.activeFrontmatterLink.length) return;
 				await this.getExistingCSVViewTypeLeaf();
 				const csvFile = this.getCSVFile(file as TFile);
 				if (!(csvFile instanceof TFile)) return;
@@ -112,25 +117,31 @@ export default class PreviewDataPlugin extends Plugin {
 		}
 	}
 
-	getCSVFile(file: TFile) {
-		const cache = this.app.metadataCache.getFileCache(file);
-		if (!cache) return;
-		const firstFrontmatterLink = cache.frontmatterLinks?.find((link) => link.link.endsWith(".csv"))?.link;
+	getFileCache(file: TFile) {
+		return this.app.metadataCache.getFileCache(file);
+	}
 
-		this.activeFrontmatterLink =
-			cache.frontmatterLinks
+	getCSVFile(file: TFile) {
+		if (!this.fileCache) return;
+		const firstFrontmatterLink = this.fileCache.frontmatterLinks?.find((link) => link.link.endsWith(".csv"))?.link;
+		if (!firstFrontmatterLink) return;
+		const csvRelativeFilePath = this.settings.csvFolderPath + firstFrontmatterLink;
+		const csvFile = this.app.vault.getAbstractFileByPath(csvRelativeFilePath);
+		return csvFile;
+	}
+
+	getFrontmatterLinks(file: TFile) {
+		if (!this.fileCache) return [];
+		return (
+			this.fileCache.frontmatterLinks
 				?.filter((link) => link.link.endsWith(".csv"))
 				.map((link) => {
 					return {
 						...link,
 						fullPath: this.settings.csvFolderPath + link.link,
 					};
-				}) || [];
-		if (!firstFrontmatterLink) return;
-
-		const csvRelativeFilePath = this.settings.csvFolderPath + firstFrontmatterLink;
-		const csvFile = this.app.vault.getAbstractFileByPath(csvRelativeFilePath);
-		return csvFile;
+				}) || []
+		);
 	}
 
 	renderLinkedCSVFiles() {
