@@ -7,15 +7,15 @@ If your plugin does not need CSS, delete this file.
 
 */
 
-.preview-data-plugin .view-header {
+#more-data-plugin .view-header {
   display: flex !important;
 }
 
-.preview-data-plugin .inline-title {
+#more-data-plugin .inline-title {
   display: none !important;
 }
 
-.linked-csv-files-container {
+#more-data-plugin .linked-csv-files-container {
   --file-margins: var(--size-4-5);
   display: flex;
   align-items: center;

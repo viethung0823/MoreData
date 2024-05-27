@@ -54,29 +54,17 @@ export default class PreviewDataPlugin extends Plugin {
 
 		this.registerView(CSV_VIEW_TYPE, (leaf) => new CSVView(leaf, this));
 
-		const savedLeafState = await this.loadData();
-		if (savedLeafState && savedLeafState.leafId) {
-			const leaves = this.workspace.getLeavesOfType(CSV_VIEW_TYPE);
-			this.csvLeaf = leaves.find((leaf) => leaf.getViewState() === savedLeafState.leafId) || null;
-		}
-
 		this.registerEvent(
 			this.workspace.on("file-open", async (file) => {
-				await this.getExistingCSVViewTypeLeaf();
 				if (!this.isValidFile(file)) return;
-
+				await this.getExistingCSVViewTypeLeaf();
 				const csvFile = this.getCSVFile(file as TFile);
 				if (!(csvFile instanceof TFile)) return;
-
 				await this.setCSVLeafStateAndReveal(csvFile);
+				this.renderLinkedCSVFiles();
+				//
 			}),
 		);
-	}
-
-	async onunload() {
-		if (this.csvLeaf) {
-			this.saveData(this.csvLeaf.getViewState());
-		}
 	}
 
 	async loadSettings() {
@@ -114,7 +102,7 @@ export default class PreviewDataPlugin extends Plugin {
 		if (this.csvLeaf) {
 			await this.csvLeaf.setViewState({
 				type: CSV_VIEW_TYPE,
-				state: {file: csvFile.path},
+				state: {file: csvFile.path, mode: "preview"},
 				active: false,
 			});
 			this.workspace.revealLeaf(this.csvLeaf);
@@ -140,5 +128,48 @@ export default class PreviewDataPlugin extends Plugin {
 		const csvRelativeFilePath = this.settings.csvFolderPath + firstFrontmatterLink;
 		const csvFile = this.app.vault.getAbstractFileByPath(csvRelativeFilePath);
 		return csvFile;
+	}
+
+	renderLinkedCSVFiles() {
+		// Ensure csvLeaf is defined
+		if (!this.csvLeaf) {
+			console.error("csvLeaf is undefined");
+			return;
+		}
+
+		// Remove the old container
+		const oldContainer = this.csvLeaf.view.containerEl.querySelector(".linked-csv-files-container");
+		if (oldContainer) {
+			oldContainer.remove();
+		}
+
+		const contentElem = this.csvLeaf.view.containerEl.querySelector(".view-content");
+		if (!contentElem) {
+			console.error("contentElem is undefined");
+			return;
+		}
+
+		if (this.activeFrontmatterLink.length > 1) {
+			// Create a new container and prepend it to the content element
+			const container = contentElem.createDiv();
+			container.classList.add("linked-csv-files-container");
+			contentElem.prepend(container);
+
+			this.activeFrontmatterLink.forEach((link) => {
+				const spanItem = container.createSpan();
+				spanItem.innerText = link.displayText as string;
+				spanItem.classList.add("external-link");
+
+				// Add a click event listener to the span
+				spanItem.addEventListener("click", () => {
+					const csvFile = this.app.vault.getAbstractFileByPath(link.fullPath);
+					if (!(csvFile instanceof TFile)) {
+						console.error("csvFile is not an instance of TFile");
+						return;
+					}
+					this.setCSVLeafStateAndReveal(csvFile);
+				});
+			});
+		}
 	}
 }
