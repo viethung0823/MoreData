@@ -76,6 +76,9 @@ export default class PreviewDataPlugin extends Plugin {
 	}
 
 	async getExistingCSVViewTypeLeaf() {
+		if (this.csvLeaf && !this.workspace.getLeavesOfType(CSV_VIEW_TYPE).includes(this.csvLeaf)) {
+			this.csvLeaf = null;
+		}
 		if (!this.csvLeaf) {
 			const leaves = this.workspace.getLeavesOfType(CSV_VIEW_TYPE);
 			if (leaves.length > 0) {
