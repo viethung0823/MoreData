@@ -10,6 +10,7 @@ export class CSVView extends MarkdownView {
 		super(leaf);
 		this.plugin = plugin;
 		this.containerEl.id = "more-data-plugin";
+		this.canAcceptExtension(".csv");
 	}
 
 	getIcon() {
