@@ -2,6 +2,7 @@ import PreviewDataPlugin from "main";
 import {MarkdownView, TFile, WorkspaceLeaf} from "obsidian";
 
 export const CSV_VIEW_TYPE = "CSV_VIEW";
+const FILE_EXTENSIONS = ["csv"];
 
 export class CSVView extends MarkdownView {
 	plugin: PreviewDataPlugin;
@@ -10,6 +11,7 @@ export class CSVView extends MarkdownView {
 		super(leaf);
 		this.plugin = plugin;
 		this.containerEl.id = "more-data-plugin";
+		this.navigation = false;
 	}
 
 	getIcon() {
@@ -17,7 +19,7 @@ export class CSVView extends MarkdownView {
 	}
 
 	canAcceptExtension(extension: string) {
-		return extension === "csv";
+		return FILE_EXTENSIONS.contains(extension);
 	}
 
 	getViewType(): string {
