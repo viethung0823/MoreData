@@ -25,3 +25,7 @@ If your plugin does not need CSS, delete this file.
   border-bottom: 2px solid var(--hr-color);
   flex-wrap: wrap;
 }
+
+#more-data-plugin .hidden{
+  display: none;
+}

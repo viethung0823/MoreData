@@ -1,95 +1,52 @@
-import {App, CachedMetadata, FrontmatterLinkCache, Plugin, PluginSettingTab, Setting, TFile, WorkspaceLeaf} from "obsidian";
-import {CSVView, CSV_VIEW_TYPE} from "./view";
-
-interface MyPluginSettings {
-	csvFolderPath: string;
-}
-
-interface ExtendedFrontmatterLinkCache extends FrontmatterLinkCache {
-	fullPath: string;
-}
-
-const DEFAULT_SETTINGS: MyPluginSettings = {
-	csvFolderPath: "",
-};
-
-class MyPluginSettingTab extends PluginSettingTab {
-	plugin: PreviewDataPlugin;
-
-	constructor(app: App, plugin: PreviewDataPlugin) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
-
-	display(): void {
-		let {containerEl} = this;
-		containerEl.empty();
-		containerEl.createEl("h2", {text: "CSV Folder Settings"});
-
-		new Setting(containerEl)
-			.setName("CSV Folder Path")
-			.setDesc("Path to the folder containing CSV files")
-			.addText((text) =>
-				text
-					.setPlaceholder("/")
-					.setValue(this.plugin.settings.csvFolderPath)
-					.onChange(async (value) => {
-						this.plugin.settings.csvFolderPath = value;
-						await this.plugin.saveSettings();
-					}),
-			);
-	}
-}
+import { Plugin, TFile, WorkspaceLeaf } from "obsidian";
+import { MoreDataView, MORE_DATA_VIEW_TYPE, pluginIcon, pluginViewId } from "./view";
 
 export default class PreviewDataPlugin extends Plugin {
-	settings: MyPluginSettings;
-	csvLeaf: WorkspaceLeaf | null = null;
+	activeLeaf: WorkspaceLeaf | null = null;
 	workspace = this.app.workspace;
-	activeFrontmatterLink: ExtendedFrontmatterLinkCache[] = [];
-	fileCache: CachedMetadata | null = null;
+	currentResolvedLinks: Record<string, string[]> = {};
 
 	async onload() {
-		await this.loadSettings();
-
-		this.addSettingTab(new MyPluginSettingTab(this.app, this));
-
-		this.registerView(CSV_VIEW_TYPE, (leaf) => new CSVView(leaf, this));
+		this.registerView(MORE_DATA_VIEW_TYPE, (leaf) => new MoreDataView(leaf));
 
 		this.registerEvent(
 			this.workspace.on("file-open", async (file) => {
+				if (this.activeLeaf && this.activeLeaf.view) {
+					// TODO: find correct way to handle this, this is temporary workaround for keep active leaf state has type: MORE_DATA_VIEW_TYPE so it wont open any new leaf
+					const currentViewState = this.activeLeaf.getViewState();
+					await this.activeLeaf.setViewState({
+						...currentViewState,
+						type: MORE_DATA_VIEW_TYPE,
+						active: false,
+					});
+					this.activeLeaf.view.containerEl.id = pluginViewId;
+					this.activeLeaf.view.getIcon = () => pluginIcon;
+				}
 				if (!this.isValidFile(file)) return;
-				this.fileCache = this.getFileCache(file as TFile);
-				if (!this.fileCache) return;
-				this.activeFrontmatterLink = this.getFrontmatterLinks(file as TFile);
-				if (!this.activeFrontmatterLink.length) return;
-				await this.getExistingCSVViewTypeLeaf();
-				const csvFile = this.getCSVFile(file as TFile);
-				if (!(csvFile instanceof TFile)) return;
-				await this.setCSVLeafStateAndReveal(csvFile);
-				this.renderLinkedCSVFiles();
-				//
+				this.currentResolvedLinks = this.getActiveFileResolvedLinks(file as TFile);
+				if (!Object.keys(this.currentResolvedLinks).length) return;
+				const firstCSVLink = this.currentResolvedLinks?.csv?.[0];
+				if (firstCSVLink) {
+					const firstCSVFile = this.app.vault.getAbstractFileByPath(firstCSVLink);
+					if (!(firstCSVFile instanceof TFile)) return;
+					await this.getExistingMoreDataViewTypeLeaf();
+					await this.setActiveLeafStateAndReveal(firstCSVFile);
+					this.renderLinks();
+				}
 			}),
 		);
 	}
 
-	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-	}
-
-	async saveSettings() {
-		await this.saveData(this.settings);
-	}
-
-	async getExistingCSVViewTypeLeaf() {
-		if (this.csvLeaf && !this.workspace.getLeavesOfType(CSV_VIEW_TYPE).includes(this.csvLeaf)) {
-			this.csvLeaf = null;
+	async getExistingMoreDataViewTypeLeaf() {
+		if (this.activeLeaf && !this.workspace.getLeavesOfType(MORE_DATA_VIEW_TYPE).includes(this.activeLeaf)) {
+			this.activeLeaf = null;
 		}
-		if (!this.csvLeaf) {
-			const leaves = this.workspace.getLeavesOfType(CSV_VIEW_TYPE);
+		if (!this.activeLeaf) {
+			const leaves = this.workspace.getLeavesOfType(MORE_DATA_VIEW_TYPE);
 			if (leaves.length > 0) {
-				this.csvLeaf = leaves[0];
+				this.activeLeaf = leaves[0];
 			} else {
-				this.csvLeaf = this.workspace.getRightLeaf(false);
+				this.activeLeaf = this.workspace.getRightLeaf(false);
 			}
 		}
 	}
@@ -106,82 +63,78 @@ export default class PreviewDataPlugin extends Plugin {
 		return true;
 	}
 
-	async setCSVLeafStateAndReveal(csvFile: TFile) {
-		if (this.csvLeaf) {
-			await this.csvLeaf.setViewState({
-				type: CSV_VIEW_TYPE,
+	async setActiveLeafStateAndReveal(csvFile: TFile) {
+		if (this.activeLeaf) {
+			await this.activeLeaf.setViewState({
+				type: MORE_DATA_VIEW_TYPE,
 				state: {file: csvFile.path, mode: "preview"},
 				active: false,
 			});
-			this.workspace.revealLeaf(this.csvLeaf);
+			this.workspace.revealLeaf(this.activeLeaf);
 		}
 	}
 
-	getFileCache(file: TFile) {
-		return this.app.metadataCache.getFileCache(file);
+	getActiveFileResolvedLinks(file: TFile) {
+		const resolvedLinks = this.app.metadataCache.resolvedLinks[file.path];
+		const result: Record<string, string[]> = {};
+
+		for (const filePath in resolvedLinks) {
+			const extension = filePath.split(".").pop();
+			if (extension) {
+				if (!result[extension]) {
+					result[extension] = [];
+				}
+				result[extension].push(filePath);
+			}
+		}
+
+		return result;
 	}
 
-	getCSVFile(file: TFile) {
-		if (!this.fileCache) return;
-		const firstFrontmatterLink = this.fileCache.frontmatterLinks?.find((link) => link.link.endsWith(".csv"))?.link;
-		if (!firstFrontmatterLink) return;
-		const csvRelativeFilePath = this.settings.csvFolderPath + firstFrontmatterLink;
-		const csvFile = this.app.vault.getAbstractFileByPath(csvRelativeFilePath);
-		return csvFile;
-	}
-
-	getFrontmatterLinks(file: TFile) {
-		if (!this.fileCache) return [];
-		return (
-			this.fileCache.frontmatterLinks
-				?.filter((link) => link.link.endsWith(".csv"))
-				.map((link) => {
-					return {
-						...link,
-						fullPath: this.settings.csvFolderPath + link.link,
-					};
-				}) || []
-		);
-	}
-
-	renderLinkedCSVFiles() {
-		// Ensure csvLeaf is defined
-		if (!this.csvLeaf) {
-			console.error("csvLeaf is undefined");
+	renderLinks() {
+		// Ensure activeLeaf is defined
+		if (!this.activeLeaf) {
+			console.error("activeLeaf is undefined");
 			return;
 		}
 
 		// Remove the old container
-		const oldContainer = this.csvLeaf.view.containerEl.querySelector(".linked-csv-files-container");
+		const oldContainer = this.activeLeaf.view.containerEl.querySelector(".linked-csv-files-container");
 		if (oldContainer) {
 			oldContainer.remove();
 		}
 
-		const contentElem = this.csvLeaf.view.containerEl.querySelector(".view-content");
+		const contentElem = this.activeLeaf.view.containerEl.querySelector(".view-content");
 		if (!contentElem) {
 			console.error("contentElem is undefined");
 			return;
 		}
+		const allLinks = [...(this.currentResolvedLinks?.csv || []), ...(this.currentResolvedLinks?.md || [])];
 
-		if (this.activeFrontmatterLink.length > 1) {
+		if (allLinks?.length > 1) {
 			// Create a new container and prepend it to the content element
 			const container = contentElem.createDiv();
 			container.classList.add("linked-csv-files-container");
 			contentElem.prepend(container);
 
-			this.activeFrontmatterLink.forEach((link) => {
+			allLinks?.forEach((link) => {
 				const spanItem = container.createSpan();
-				spanItem.innerText = link.displayText as string;
+				spanItem.innerText = link as string;
 				spanItem.classList.add("external-link");
+				if (link.endsWith(".csv")) {
+					spanItem.classList.add("csv-link");
+				} else if (link.endsWith(".md")) {
+					spanItem.classList.add("md-link");
+				}
 
 				// Add a click event listener to the span
 				spanItem.addEventListener("click", () => {
-					const csvFile = this.app.vault.getAbstractFileByPath(link.fullPath);
+					const csvFile = this.app.vault.getAbstractFileByPath(link);
 					if (!(csvFile instanceof TFile)) {
 						console.error("csvFile is not an instance of TFile");
 						return;
 					}
-					this.setCSVLeafStateAndReveal(csvFile);
+					this.setActiveLeafStateAndReveal(csvFile);
 				});
 			});
 		}
