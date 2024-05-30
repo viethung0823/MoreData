@@ -26,6 +26,19 @@ If your plugin does not need CSS, delete this file.
   flex-wrap: wrap;
 }
 
-#more-data-plugin .hidden{
+#more-data-plugin .hidden {
   display: none;
+}
+
+.create-dataview-file-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.create-dataview-file-button-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
 }
