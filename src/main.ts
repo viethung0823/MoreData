@@ -54,9 +54,9 @@ export default class PreviewDataPlugin extends Plugin {
 				if (!this.isValidFile(file)) return;
 				this.currentResolvedLinks = this.getActiveFileResolvedLinks(file as TFile);
 				if (!Object.keys(this.currentResolvedLinks).length) return;
-				const firstCSVLink = this.currentResolvedLinks?.csv?.[0];
-				if (firstCSVLink) {
-					const firstCSVFile = this.app.vault.getAbstractFileByPath(firstCSVLink);
+				const firstFile = this.currentResolvedLinks?.csv?.[0] || this.currentResolvedLinks?.md?.[0];
+				if (firstFile) {
+					const firstCSVFile = this.app.vault.getAbstractFileByPath(firstFile);
 					if (!(firstCSVFile instanceof TFile)) return;
 					await this.getExistingMoreDataViewTypeLeaf();
 					await this.setActiveLeafStateAndReveal(firstCSVFile);
