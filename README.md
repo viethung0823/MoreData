@@ -1,6 +1,6 @@
 # [MoreData](https://github.com/viethung0823/MoreData)
 
-<img src="docs/resources/view.png" alt="MoreData view" align="center">
+<img src="https://raw.githubusercontent.com/viethung0823/MoreData/main/docs/resources/view.png" alt="MoreData view" align="center">
 
 ---
 
@@ -23,4 +23,4 @@ Configure the plugin in the settings. You can set the default directory for the 
 
 ## Demo
 
-![Demo](docs/resources/demo.gif)
+![Demo](https://raw.githubusercontent.com/viethung0823/MoreData/main/docs/resources/demo.gif)
