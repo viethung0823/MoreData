@@ -1,7 +1,5 @@
 # [MoreData](https://github.com/viethung0823/MoreData)
 
-<img src="https://raw.githubusercontent.com/viethung0823/MoreData/main/docs/resources/view.png" alt="MoreData view" align="center">
-
 ---
 
 ## Introduction
@@ -20,6 +18,9 @@ This plugin currently supports viewing CSV files within Obsidian. However, I am 
 
 ## Usage
 Configure the plugin in the settings. You can set the default directory for the data files and the default directory for the dataview files.
+
+## Screenshots
+<img src="https://raw.githubusercontent.com/viethung0823/MoreData/main/docs/resources/view.png" alt="MoreData view" align="center">
 
 ## Demo
 
