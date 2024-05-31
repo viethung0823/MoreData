@@ -1,4 +1,4 @@
-import {Modal, App, ButtonComponent} from "obsidian";
+import {Modal, App, ButtonComponent, TFile} from "obsidian";
 import PreviewDataPlugin from "src/main";
 import {GenericTextSuggester} from "src/utils/generticTextSuggester";
 
@@ -21,6 +21,7 @@ export class CreateDataViewFileModal extends Modal {
 
 		const activeFile = this.plugin.getActiveFile();
 		const activeFileSuggestion = activeFile?.basename + this.plugin.settings.dataviewSuffix;
+		this.plugin.currentResolvedLinks = this.plugin.getActiveFileResolvedLinks(activeFile as TFile);
 		const linkedCSVFilesSuggestions = [
 			...new Set(
 				this.plugin.currentResolvedLinks?.csv?.map(
