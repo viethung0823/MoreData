@@ -1,6 +1,6 @@
 # [MoreData](https://github.com/viethung0823/MoreData)
 
-<img src="https://github.com/viethung0823/MoreData/blob/master/docs/resources/view.png" alt="MoreData view" align="center">
+<img src="docs/resources/view.png" alt="MoreData view" align="center">
 
 ---
 
