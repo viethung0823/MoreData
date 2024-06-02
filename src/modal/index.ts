@@ -1,4 +1,4 @@
-import {Modal, App, ButtonComponent, TFile} from "obsidian";
+import {Modal, App, ButtonComponent, TFile, Notice} from "obsidian";
 import PreviewDataPlugin from "src/main";
 import {GenericTextSuggester} from "src/utils/generticTextSuggester";
 
@@ -12,6 +12,11 @@ export class CreateDataViewFileModal extends Modal {
 	}
 
 	onOpen() {
+		const activeFile = this.plugin.getActiveFile();
+		if (!(activeFile instanceof TFile)) {
+			new Notice("There is no active file");
+			return;
+		}
 		let {contentEl} = this;
 		contentEl.createEl("h2", {text: "Create new dataview file"});
 
@@ -19,9 +24,9 @@ export class CreateDataViewFileModal extends Modal {
 		form.classList.add("create-dataview-file-form");
 		let nameInput = form.createEl("input", {type: "text"});
 
-		const activeFile = this.plugin.getActiveFile();
+
 		const activeFileSuggestion = activeFile?.basename + this.plugin.settings.dataviewSuffix;
-		this.plugin.currentResolvedLinks = this.plugin.getActiveFileResolvedLinks(activeFile as TFile);
+		this.plugin.currentResolvedLinks = this.plugin.getActiveFileResolvedLinks(activeFile);
 		const linkedCSVFilesSuggestions = [
 			...new Set(
 				this.plugin.currentResolvedLinks?.csv?.map(

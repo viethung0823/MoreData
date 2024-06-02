@@ -40,6 +40,9 @@ export default class PreviewDataPlugin extends Plugin {
 
 		this.registerEvent(
 			this.workspace.on("file-open", async (file) => {
+				if (!(file instanceof TFile)) {
+					return;
+				}
 				if (this.activeLeaf && this.activeLeaf.view) {
 					// TODO: find correct way to handle this, this is temporary workaround for keep active leaf state has type: MORE_DATA_VIEW_TYPE so it wont open any new leaf
 					const currentViewState = this.activeLeaf.getViewState();
@@ -52,7 +55,7 @@ export default class PreviewDataPlugin extends Plugin {
 					this.activeLeaf.view.getIcon = () => PLUGIN_ICON;
 				}
 				if (!this.isValidFile(file)) return;
-				this.currentResolvedLinks = this.getActiveFileResolvedLinks(file as TFile);
+				this.currentResolvedLinks = this.getActiveFileResolvedLinks(file);
 				if (!Object.keys(this.currentResolvedLinks).length) return;
 				const firstFile = this.currentResolvedLinks?.csv?.[0] || this.currentResolvedLinks?.md?.[0];
 				if (firstFile) {
