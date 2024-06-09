@@ -40,7 +40,7 @@ export class CreateDataViewFileModal extends Modal {
 		];
 		const allSuggestions = [activeFileSuggestion, ...linkedCSVFilesSuggestions];
 
-		new GenericTextSuggester(this.app, nameInput, allSuggestions, false);
+		new GenericTextSuggester(this.app, nameInput, allSuggestions);
 
 		let buttonWrapper = form.createEl("div");
 		buttonWrapper.classList.add("create-dataview-file-button-wrapper");

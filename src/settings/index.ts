@@ -62,7 +62,7 @@ export class MoreDataSettingTab extends PluginSettingTab {
 					search.setPlaceholder("Template path");
 				}
 				search.setValue(this.plugin.settings.dataviewTemplatePath);
-				new GenericTextSuggester(this.app, search.inputEl, templates, false, 50);
+				new GenericTextSuggester(this.app, search.inputEl, templates);
 				return search.onChange(async (value) => {
 					this.plugin.settings.dataviewTemplatePath = value;
 					await this.plugin.saveSettings();

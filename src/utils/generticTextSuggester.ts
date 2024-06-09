@@ -1,37 +1,25 @@
-// Credits go to chhoumann's Quick Add Plugin: https://github.com/chhoumann/quickadd
+import {AbstractInputSuggest, App, TAbstractFile, TFolder} from "obsidian";
 
-import {TextInputSuggest} from "./suggest";
-import type {App} from "obsidian";
+export class GenericTextSuggester extends AbstractInputSuggest<string> {
+	private paths: string[];
 
-export class GenericTextSuggester extends TextInputSuggest<string> {
-	constructor(public app: App, public inputEl: HTMLInputElement | HTMLTextAreaElement, private items: string[], private showSuggestionsWhenEmpty: boolean = true, private maxSuggestions = Infinity) {
+	constructor(public app: App, public inputEl: HTMLInputElement, paths: string[]) {
 		super(app, inputEl);
+		this.paths = paths;
 	}
 
 	getSuggestions(inputStr: string): string[] {
-		if (!inputStr && !this.showSuggestionsWhenEmpty) {
-			return [];
-		}
-		const inputLowerCase: string = inputStr.toLowerCase();
-
-		const filtered = this.items.filter((item) => {
-			if (item.toLowerCase().contains(inputLowerCase)) return item;
-		});
-
-		if (!filtered) this.close();
-
-		const limited = filtered.slice(0, this.maxSuggestions);
-
-		return limited;
+		const lowerCaseInputStr = inputStr.toLowerCase();
+		return this.paths.filter((path) => path.toLowerCase().includes(lowerCaseInputStr));
 	}
 
-	selectSuggestion(item: string): void {
-		this.inputEl.value = item;
+	renderSuggestion(path: string, el: HTMLElement): void {
+		el.setText(path);
+	}
+
+	selectSuggestion(path: string): void {
+		this.inputEl.value = path;
 		this.inputEl.trigger("input");
 		this.close();
-	}
-
-	renderSuggestion(value: string, el: HTMLElement): void {
-		if (value) el.setText(value);
 	}
 }
