@@ -18,7 +18,7 @@ export class CreateDataViewFileModal extends Modal {
 			return;
 		}
 		let {contentEl} = this;
-		contentEl.createEl("h2", {text: "Create new dataview file"});
+		contentEl.createEl("h2", {text: "Create new Dataview file"});
 
 		let form = contentEl.createEl("form");
 		form.classList.add("create-dataview-file-form");

@@ -15,7 +15,7 @@ export default class PreviewDataPlugin extends Plugin {
 
 		this.addCommand({
 			id: "create-new-dataview-file",
-			name: "Create new dataview file",
+			name: "Create new Dataview file",
 			callback: async () => {
 				const templateFile = this.app.vault.getAbstractFileByPath(this.settings.dataviewTemplatePath);
 				if (!(templateFile instanceof TFile)) {

@@ -3,7 +3,7 @@
 	"name": "More Data",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Enhance your Obsidian experience by viewing additional data (CSV) and managing DataView files(query for dataview plugin).",
+	"description": "Improve your experience by viewing more data (CSV) and handling DataView files (queries).",
 	"author": "viethung0823",
 	"authorUrl": "https://github.com/viethung0823",
 	"isDesktopOnly": true

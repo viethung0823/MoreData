@@ -30,14 +30,14 @@ export class MoreDataSettingTab extends PluginSettingTab {
 		containerEl.createEl("h2", {text: "MoreData Settings"});
 
 		new Setting(containerEl)
-			.setName("Template Folder Path")
+			.setName("Template folder path")
 			.setDesc("Use for template files suggestion")
 			.addText((text) => {
 				{
 					new GenericTextSuggester(
 						this.app,
 						text.inputEl,
-						app.vault
+						this.app.vault
 							.getAllLoadedFiles()
 							.filter((f) => f instanceof TFolder && f.path !== "/")
 							.map((f) => f.path),
@@ -54,7 +54,7 @@ export class MoreDataSettingTab extends PluginSettingTab {
 			});
 
 		new Setting(containerEl)
-			.setName("Dataview Template Path")
+			.setName("Dataview template path")
 			.setDesc("Tempalte file to use for dataview files")
 			.addSearch((search) => {
 				const templates: string[] = this.plugin.getTemplateFiles().map((f) => f.path);
@@ -70,7 +70,7 @@ export class MoreDataSettingTab extends PluginSettingTab {
 			});
 
 		new Setting(containerEl)
-			.setName("Dataview Folder Path")
+			.setName("Dataview folder path")
 			.setDesc("Folder to save all dataview files")
 			.addText((text) => {
 				new GenericTextSuggester(
@@ -91,7 +91,7 @@ export class MoreDataSettingTab extends PluginSettingTab {
 			});
 
 		new Setting(containerEl)
-			.setName("Dataview Suffix")
+			.setName("Dataview suffix")
 			.setDesc("Suffix to use for dataview file name")
 			.addText((text) => {
 				{
