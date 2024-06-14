@@ -99,7 +99,7 @@ export default class PreviewDataPlugin extends Plugin {
 		if (this.activeLeaf) {
 			await this.activeLeaf.setViewState({
 				type: MORE_DATA_VIEW_TYPE,
-				state: {file: csvFile.path, mode: "preview"},
+				state: { file: csvFile.path, mode: "preview" },
 				active: false,
 			});
 			this.workspace.revealLeaf(this.activeLeaf);
@@ -115,6 +115,9 @@ export default class PreviewDataPlugin extends Plugin {
 			if (extension) {
 				if (!result[extension]) {
 					result[extension] = [];
+				}
+				if (extension === "md" && !filePath.includes(this.settings.dataviewSuffix)) {
+					continue;
 				}
 				result[extension].push(filePath);
 			}
