@@ -116,7 +116,8 @@ export default class PreviewDataPlugin extends Plugin {
 				if (!result[extension]) {
 					result[extension] = [];
 				}
-				if (extension === "md" && !filePath.includes(this.settings.dataviewSuffix)) {
+				console.log("filePath", filePath);
+				if (extension === "md" && (!filePath.includes(this.settings.dataviewSuffix) || !filePath.includes(this.settings.dataviewFolderPath))) {
 					continue;
 				}
 				result[extension].push(filePath);
