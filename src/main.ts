@@ -184,11 +184,6 @@ export default class PreviewDataPlugin extends Plugin {
 		return file;
 	}
 
-	public getTemplateFiles(): TFile[] {
-		if (!String.isString(this.settings.templateFolderPath)) return [];
-		return this.app.vault.getFiles().filter((file) => file.path.startsWith(this.settings.templateFolderPath));
-	}
-
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
