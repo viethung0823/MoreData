@@ -144,9 +144,7 @@ export default class PreviewDataPlugin extends Plugin {
 			console.error("contentElem is undefined");
 			return;
 		}
-		const dataviewFolderPathRegex = new RegExp(this.settings.dataviewFolderPath);
-		const allDataviewLinks = (this.currentResolvedLinks?.md || []).filter((link) => dataviewFolderPathRegex.test(link));
-		const allLinks = [...(this.currentResolvedLinks?.csv || []), ...allDataviewLinks];
+		const allLinks = [...(this.currentResolvedLinks?.csv || []), ...(this.currentResolvedLinks?.md || [])];
 
 		if (allLinks?.length > 1) {
 			// Create a new container and prepend it to the content element
