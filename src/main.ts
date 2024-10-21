@@ -211,12 +211,22 @@ export default class PreviewDataPlugin extends Plugin {
 		const resolvedLinks: Record<string, any[]> = {};
 
 		for (const [key, path] of Object.entries(this.settings.pathsToExtractMetadata)) {
+				const abstractFile = this.app.vault.getAbstractFileByPath(path);
+				if (!(abstractFile instanceof TFile)) {
+					console.error(`File not found or not a TFile: ${path}`);
+					continue;
+				}
+				const fileMetadata = this.app.metadataCache.getFileCache(abstractFile);
 				const resolvedLinkData = this.app.metadataCache.resolvedLinks[path];
 				const resolvedLinkArr = Object.keys(resolvedLinkData).length > 0 ? Object.keys(resolvedLinkData) : [];
-				resolvedLinks[key] = resolvedLinkArr.map(link => {
+				const frontMatterLinks = fileMetadata?.frontmatter?.["links"] || [];
+				const mergedLinks = [...resolvedLinkArr, ...frontMatterLinks];
+				resolvedLinks[key] = mergedLinks.map(link => {
+					const urlPattern = /^https?:\/\//i;
+					const isURL = urlPattern.test(link);
 					return {
-						fileName: parse(link).name,
-						uri: this.getFilepathURI(link),
+						fileName: this.getFilename(link, isURL),
+						uri: isURL ?  link : this.getFilepathURI(link),
 					};
 				});
 		}
@@ -238,6 +248,23 @@ export default class PreviewDataPlugin extends Plugin {
     const encodedFilePath = encodeURIComponent(filePath);
     return `obsidian://adv-uri?vault=${encodeURIComponent("Vault")}&filepath=${encodedFilePath}`;
 	}
+
+	getFilename(link: string, isURL: boolean): string {
+    if (isURL) {
+			try {
+					const parsedURL = new URL(link);
+					const pathname = parsedURL.pathname;
+					const segments = pathname.split('/');
+					return segments.length > 1 ? segments.pop() || segments.pop() || '' : '';
+			} catch (error) {
+					console.error("Invalid URL:", error);
+					return '';
+			}
+	} else {
+			// The link is a file path
+			return parse(link).name;
+	}
+}
 
 	async getResolvedLinksOfActiveFile() {
 		const activeFile = this.getActiveMDFile();
