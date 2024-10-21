@@ -3,6 +3,7 @@ import { MoreDataView, MORE_DATA_VIEW_TYPE, PLUGIN_ICON, PLUGIN_VIEW_ID } from "
 import { DEFAULT_SETTINGS, MoreDataSettings, MoreDataSettingTab } from "./settings";
 import { CreateDataViewFileModal } from "./modal";
 import { writeFile } from "fs";
+import { parse } from "path";
 
 export default class PreviewDataPlugin extends Plugin {
 	settings: MoreDataSettings;
@@ -212,7 +213,12 @@ export default class PreviewDataPlugin extends Plugin {
 		for (const [key, path] of Object.entries(this.settings.pathsToExtractMetadata)) {
 				const resolvedLinkData = this.app.metadataCache.resolvedLinks[path];
 				const resolvedLinkArr = Object.keys(resolvedLinkData).length > 0 ? Object.keys(resolvedLinkData) : [];
-				resolvedLinks[key] = resolvedLinkArr.map(link => this.getFilepathURI(link));
+				resolvedLinks[key] = resolvedLinkArr.map(link => {
+					return {
+						fileName: parse(link).name,
+						uri: this.getFilepathURI(link),
+					};
+				});
 		}
 
 		const jsonData = JSON.stringify(resolvedLinks, null, 2);
