@@ -12,7 +12,7 @@ export class CreateDataViewFileModal extends Modal {
 	}
 
 	onOpen() {
-		const activeFile = this.plugin.getActiveFile();
+		const activeFile = this.plugin.getActiveMDFile();
 		if (!(activeFile instanceof TFile)) {
 			new Notice("There is no active file");
 			return;

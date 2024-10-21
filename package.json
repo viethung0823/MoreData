@@ -12,6 +12,7 @@
 	"author": "",
 	"license": "MIT",
 	"devDependencies": {
+		"@types/jsoneditor": "^9.9.5",
 		"@types/node": "^16.11.6",
 		"@typescript-eslint/eslint-plugin": "5.29.0",
 		"@typescript-eslint/parser": "5.29.0",
@@ -24,6 +25,7 @@
 	"dependencies": {
 		"@popperjs/core": "^2.11.8",
 		"@semantic-release/commit-analyzer": "^13.0.0",
+		"jsoneditor": "^10.1.0",
 		"semantic-release": "^24.0.0"
 	}
 }

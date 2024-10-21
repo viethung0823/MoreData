@@ -1,11 +1,15 @@
 import PreviewDataPlugin from "src/main";
-import {PluginSettingTab, App, Setting, TFolder, TFile} from "obsidian";
-import {GenericTextSuggester} from "src/utils/generticTextSuggester";
+import { PluginSettingTab, App, Setting, TFolder, TFile } from "obsidian";
+import { GenericTextSuggester } from "src/utils/generticTextSuggester";
+import JSONEditor from "jsoneditor";
 
 export interface MoreDataSettings {
 	dataviewFolderPath: string;
 	dataviewTemplatePath: string;
 	validMDFoldersPath: string[];
+	pathsToExtractMetadata: {
+		[key: string]: string;
+	};
 	dataviewSuffix: string;
 }
 
@@ -13,6 +17,7 @@ export const DEFAULT_SETTINGS: MoreDataSettings = {
 	dataviewFolderPath: "",
 	dataviewTemplatePath: "",
 	validMDFoldersPath: [],
+	pathsToExtractMetadata: {},
 	dataviewSuffix: "_dataview",
 };
 
@@ -25,9 +30,9 @@ export class MoreDataSettingTab extends PluginSettingTab {
 	}
 
 	display(): void {
-		let {containerEl} = this;
+		let { containerEl } = this;
 		containerEl.empty();
-		containerEl.createEl("h2", {text: "MoreData Settings"});
+		containerEl.createEl("h2", { text: "MoreData Settings" });
 
 		new Setting(containerEl)
 			.setName("Dataview template path")
@@ -113,18 +118,54 @@ export class MoreDataSettingTab extends PluginSettingTab {
 			});
 
 		this.plugin.settings.validMDFoldersPath.forEach((path, index) => {
-			new Setting(containerEl)
-				.setName(path)
-				.addButton((button) => {
-					button
-						.setButtonText("X")
-						.setCta()
-						.onClick(async () => {
-							this.plugin.settings.validMDFoldersPath.splice(index, 1); // Remove the path at the current index
-							await this.plugin.saveSettings();
-							this.display();
-						});
+			new Setting(containerEl).setName(path).addButton((button) => {
+				button
+					.setButtonText("X")
+					.setCta()
+					.onClick(async () => {
+						this.plugin.settings.validMDFoldersPath.splice(index, 1); // Remove the path at the current index
+						await this.plugin.saveSettings();
+						this.display();
+					});
+			});
+		});
+
+		containerEl.createEl("h2", { text: "Get Resolved Links Settings" });
+		containerEl.createEl("p", { text: "Paths to extract metadata from" });
+		const editorContainer = containerEl.createDiv();
+		editorContainer.style.height = "400px";
+
+		new JSONEditor(
+			editorContainer,
+			{
+					mode: "tree",
+					onChangeJSON: debounce(async (json) => {
+							try {
+									this.plugin.settings.pathsToExtractMetadata = json;
+							} catch (error) {
+									console.error("Error updating settings:", error);
+							}
+					}, 300),
+					search: false,
+					mainMenuBar: false,
+			},
+			this.plugin.settings.pathsToExtractMetadata,
+		);
+		new Setting(containerEl).addButton((button) => {
+			button
+				.setButtonText("Save Settings")
+				.setCta()
+				.onClick(async () => {
+					await this.plugin.saveSettings();
 				});
 		});
 	}
+}
+
+function debounce(func: (...args: any[]) => void, wait: number) {
+	let timeout: NodeJS.Timeout;
+	return (...args: any[]) => {
+			clearTimeout(timeout);
+			timeout = setTimeout(() => func(...args), wait);
+	};
 }

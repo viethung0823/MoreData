@@ -1,7 +1,8 @@
-import {MarkdownView, Notice, Plugin, TFile, WorkspaceLeaf} from "obsidian";
-import {MoreDataView, MORE_DATA_VIEW_TYPE, PLUGIN_ICON, PLUGIN_VIEW_ID} from "./view";
-import {DEFAULT_SETTINGS, MoreDataSettings, MoreDataSettingTab} from "./settings";
-import {CreateDataViewFileModal} from "./modal";
+import { MarkdownView, Notice, Plugin, TFile, WorkspaceLeaf } from "obsidian";
+import { MoreDataView, MORE_DATA_VIEW_TYPE, PLUGIN_ICON, PLUGIN_VIEW_ID } from "./view";
+import { DEFAULT_SETTINGS, MoreDataSettings, MoreDataSettingTab } from "./settings";
+import { CreateDataViewFileModal } from "./modal";
+import { writeFile } from "fs";
 
 export default class PreviewDataPlugin extends Plugin {
 	settings: MoreDataSettings;
@@ -33,6 +34,22 @@ export default class PreviewDataPlugin extends Plugin {
 						new Notice("Failed to create new file: " + error.message);
 					}
 				}).open();
+			},
+		});
+
+		this.addCommand({
+			id: "get-resolved-links",
+			name: "Get Resolved Links",
+			callback: async () => {
+				this.getResolvedLinks();
+			},
+		});
+
+		this.addCommand({
+			id: "get_resolved_links_of_active_file",
+			name: "Get Resolved Links Of Active File",
+			callback: async () => {
+				this.getResolvedLinksOfActiveFile();
 			},
 		});
 
@@ -175,7 +192,7 @@ export default class PreviewDataPlugin extends Plugin {
 		}
 	}
 
-	getActiveFile() {
+	getActiveMDFile() {
 		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
 		const file = view?.file;
 		return file;
@@ -187,5 +204,42 @@ export default class PreviewDataPlugin extends Plugin {
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+	}
+
+	async getResolvedLinks() {
+		const resolvedLinks: Record<string, any[]> = {};
+
+		for (const [key, path] of Object.entries(this.settings.pathsToExtractMetadata)) {
+				const resolvedLinkData = this.app.metadataCache.resolvedLinks[path];
+				const resolvedLinkArr = Object.keys(resolvedLinkData).length > 0 ? Object.keys(resolvedLinkData) : [];
+				resolvedLinks[key] = resolvedLinkArr.map(link => this.getFilepathURI(link));
+		}
+
+		const jsonData = JSON.stringify(resolvedLinks, null, 2);
+		const filePath = "/Users/viethung/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/.obsidian/plugins/more-data/resolvedLinks.json";
+
+		writeFile(filePath, jsonData, (err) => {
+			if (err) {
+				console.error("Error writing to file:", err);
+			} else {
+				new Notice("Resolved links saved to resolvedLinks.json");
+				console.log("Resolved links saved to resolvedLinks.json");
+			}
+		});
+	}
+
+	getFilepathURI(filePath: string): string {
+    const encodedFilePath = encodeURIComponent(filePath);
+    return `obsidian://adv-uri?vault=${encodeURIComponent("Vault")}&filepath=${encodedFilePath}`;
+	}
+
+	async getResolvedLinksOfActiveFile() {
+		const activeFile = this.getActiveMDFile();
+		if ((activeFile instanceof TFile)) {
+			console.log(activeFile);
+			this.settings.pathsToExtractMetadata[activeFile.name] = activeFile.path;
+			await this.saveSettings();
+			this.getResolvedLinks();
+		}
 	}
 }
