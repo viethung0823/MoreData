@@ -209,26 +209,33 @@ export default class PreviewDataPlugin extends Plugin {
 
 	async getResolvedLinks() {
 		const resolvedLinks: Record<string, any[]> = {};
-
+		const urlPattern = /^https?:\/\//i;
 		for (const [key, path] of Object.entries(this.settings.pathsToExtractMetadata)) {
-				const abstractFile = this.app.vault.getAbstractFileByPath(path);
-				if (!(abstractFile instanceof TFile)) {
-					console.error(`File not found or not a TFile: ${path}`);
-					continue;
-				}
-				const fileMetadata = this.app.metadataCache.getFileCache(abstractFile);
-				const resolvedLinkData = this.app.metadataCache.resolvedLinks[path];
-				const resolvedLinkArr = Object.keys(resolvedLinkData).length > 0 ? Object.keys(resolvedLinkData) : [];
-				const frontMatterLinks = fileMetadata?.frontmatter?.["links"] || [];
-				const mergedLinks = [...resolvedLinkArr, ...frontMatterLinks];
-				resolvedLinks[key] = mergedLinks.map(link => {
-					const urlPattern = /^https?:\/\//i;
-					const isURL = urlPattern.test(link);
-					return {
-						fileName: this.getFilename(link, isURL),
-						uri: isURL ?  link : this.getFilepathURI(link),
-					};
-				});
+			const abstractFile = this.app.vault.getAbstractFileByPath(path);
+			if (!(abstractFile instanceof TFile)) {
+				console.error(`File not found or not a TFile: ${path}`);
+				continue;
+			}
+			const urlPattern = /^https?:\/\//i;
+
+			const fileMetadata = this.app.metadataCache.getFileCache(abstractFile);
+			const resolvedLinkData = this.app.metadataCache.resolvedLinks[path];
+
+			const resolvedLinkArr = Object.keys(resolvedLinkData).length > 0 ? Object.keys(resolvedLinkData) : [];
+			const resolvedMDLinkArr = resolvedLinkArr.filter((link) => link.endsWith(".md"));
+
+			const frontMatterLinks = fileMetadata?.frontmatter?.["links"] || [];
+			const urlFrontMatterLinks = frontMatterLinks.filter((link: string) => urlPattern.test(link));
+
+			const mergedLinks = [...resolvedMDLinkArr, ...urlFrontMatterLinks].map((link) => {
+				const isURL = urlPattern.test(link);
+				return {
+					fileName: this.getFilename(link, isURL),
+					uri: isURL ? link : this.getFilepathURI(link),
+				};
+			});
+
+			resolvedLinks[key] = mergedLinks;
 		}
 
 		const jsonData = JSON.stringify(resolvedLinks, null, 2);
@@ -245,31 +252,30 @@ export default class PreviewDataPlugin extends Plugin {
 	}
 
 	getFilepathURI(filePath: string): string {
-    const encodedFilePath = encodeURIComponent(filePath);
-    return `obsidian://adv-uri?vault=${encodeURIComponent("Vault")}&filepath=${encodedFilePath}`;
+		const encodedFilePath = encodeURIComponent(filePath);
+		return `obsidian://adv-uri?vault=${encodeURIComponent("Vault")}&filepath=${encodedFilePath}`;
 	}
 
 	getFilename(link: string, isURL: boolean): string {
-    if (isURL) {
+		if (isURL) {
 			try {
-					const parsedURL = new URL(link);
-					const pathname = parsedURL.pathname;
-					const segments = pathname.split('/');
-					return segments.length > 1 ? segments.pop() || segments.pop() || '' : '';
+				const parsedURL = new URL(link);
+				const pathname = parsedURL.pathname;
+				const segments = pathname.split("/");
+				return segments.length > 1 ? segments.pop() || segments.pop() || "" : "";
 			} catch (error) {
-					console.error("Invalid URL:", error);
-					return '';
+				console.error("Invalid URL:", error);
+				return "";
 			}
-	} else {
+		} else {
 			// The link is a file path
 			return parse(link).name;
+		}
 	}
-}
 
 	async getResolvedLinksOfActiveFile() {
 		const activeFile = this.getActiveMDFile();
-		if ((activeFile instanceof TFile)) {
-			console.log(activeFile);
+		if (activeFile instanceof TFile) {
 			this.settings.pathsToExtractMetadata[activeFile.name] = activeFile.path;
 			await this.saveSettings();
 			this.getResolvedLinks();
