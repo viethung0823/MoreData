@@ -4,6 +4,9 @@ import { DEFAULT_SETTINGS, MoreDataSettings, MoreDataSettingTab } from "./settin
 import { CreateDataViewFileModal } from "./modal";
 import { writeFile } from "fs";
 import { parse } from "path";
+import { exec as execCallback } from "child_process";
+import { promisify } from 'util';
+const exec = promisify(execCallback);
 
 export default class PreviewDataPlugin extends Plugin {
 	settings: MoreDataSettings;
@@ -210,14 +213,15 @@ export default class PreviewDataPlugin extends Plugin {
 	async getResolvedLinks() {
 		const resolvedLinks: Record<string, any[]> = {};
 		const urlPattern = /^https?:\/\//i;
+		const basePath = this.app.vault.getRoot().vault.adapter.basePath;
+
 		for (const [key, path] of Object.entries(this.settings.pathsToExtractMetadata)) {
 			const abstractFile = this.app.vault.getAbstractFileByPath(path);
 			if (!(abstractFile instanceof TFile)) {
 				console.error(`File not found or not a TFile: ${path}`);
 				continue;
 			}
-			const urlPattern = /^https?:\/\//i;
-
+			const fullPath = `${basePath}/${path}`;
 			const fileMetadata = this.app.metadataCache.getFileCache(abstractFile);
 			const resolvedLinkData = this.app.metadataCache.resolvedLinks[path];
 
@@ -227,13 +231,30 @@ export default class PreviewDataPlugin extends Plugin {
 			const frontMatterLinks = fileMetadata?.frontmatter?.["links"] || [];
 			const urlFrontMatterLinks = frontMatterLinks.filter((link: string) => urlPattern.test(link));
 
-			const mergedLinks = [...resolvedMDLinkArr, ...urlFrontMatterLinks].map((link) => {
+			let mergedLinks = [...resolvedMDLinkArr, ...urlFrontMatterLinks].map((link) => {
 				const isURL = urlPattern.test(link);
 				return {
 					fileName: this.getFilename(link, isURL),
 					uri: isURL ? link : this.getFilepathURI(link),
 				};
 			});
+
+			const command = `"/Users/viethung/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/Data/Apps/Alfred/Scripts/Obsidian/GetLinkData/GetLinkData" "mdLink" "${fullPath}"`;
+			try {
+				const { stdout } = await exec(command);
+				const goOutput = stdout ? JSON.parse(String(stdout)) : [];
+				if (Array.isArray(goOutput)) {
+					const convertedGoOutput = goOutput.map((link) => {
+						return {
+							fileName: link["Title"],
+							uri: link["Link"],
+						}
+					});
+					mergedLinks = [...mergedLinks, ...convertedGoOutput];
+				}
+			} catch (error) {
+				console.error("Error executing Go binary or parsing output:", error);
+			}
 
 			resolvedLinks[key] = mergedLinks;
 		}
