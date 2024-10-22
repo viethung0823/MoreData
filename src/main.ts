@@ -5,7 +5,8 @@ import { CreateDataViewFileModal } from "./modal";
 import { writeFile } from "fs";
 import { parse } from "path";
 import { exec as execCallback } from "child_process";
-import { promisify } from 'util';
+import { promisify } from "util";
+
 const exec = promisify(execCallback);
 
 export default class PreviewDataPlugin extends Plugin {
@@ -65,7 +66,6 @@ export default class PreviewDataPlugin extends Plugin {
 					return;
 				}
 				if (this.activeLeaf && this.activeLeaf.view) {
-					// TODO: find correct way to handle this, this is temporary workaround for keep active leaf state has type: MORE_DATA_VIEW_TYPE so it wont open any new leaf
 					const currentViewState = this.activeLeaf.getViewState();
 					await this.activeLeaf.setViewState({
 						...currentViewState,
@@ -148,13 +148,11 @@ export default class PreviewDataPlugin extends Plugin {
 	}
 
 	renderLinks() {
-		// Ensure activeLeaf is defined
 		if (!this.activeLeaf) {
 			console.error("activeLeaf is undefined");
 			return;
 		}
 
-		// Remove the old container
 		const oldContainer = this.activeLeaf.view.containerEl.querySelector(".linked-csv-files-container");
 		if (oldContainer) {
 			oldContainer.remove();
@@ -168,7 +166,6 @@ export default class PreviewDataPlugin extends Plugin {
 		const allLinks = [...(this.currentResolvedLinks?.csv || []), ...(this.currentResolvedLinks?.md || [])];
 
 		if (allLinks?.length > 1) {
-			// Create a new container and prepend it to the content element
 			const container = contentElem.createDiv();
 			container.classList.add("linked-csv-files-container");
 			contentElem.prepend(container);
@@ -183,7 +180,6 @@ export default class PreviewDataPlugin extends Plugin {
 					spanItem.classList.add("dataview-link");
 				}
 
-				// Add a click event listener to the span
 				spanItem.addEventListener("click", () => {
 					const file = this.app.vault.getAbstractFileByPath(link);
 					if (!(file instanceof TFile)) {
@@ -222,38 +218,57 @@ export default class PreviewDataPlugin extends Plugin {
 				continue;
 			}
 			const fullPath = `${basePath}/${path}`;
-			const fileMetadata = this.app.metadataCache.getFileCache(abstractFile);
-			const resolvedLinkData = this.app.metadataCache.resolvedLinks[path];
+			let resolvedMDLinkArr: string[] = [];
+			let urlFrontMatterLinks: string[] = [];
+			let mergedLinks: any[] = [];
 
-			const resolvedLinkArr = Object.keys(resolvedLinkData).length > 0 ? Object.keys(resolvedLinkData) : [];
-			const resolvedMDLinkArr = resolvedLinkArr.filter((link) => link.endsWith(".md"));
+			if (abstractFile.extension === "md") {
+				const fileMetadata = this.app.metadataCache.getFileCache(abstractFile);
+				const resolvedLinkData = this.app.metadataCache.resolvedLinks[path];
 
-			const frontMatterLinks = fileMetadata?.frontmatter?.["links"] || [];
-			const urlFrontMatterLinks = frontMatterLinks.filter((link: string) => urlPattern.test(link));
+				const resolvedLinkArr = Object.keys(resolvedLinkData).length > 0 ? Object.keys(resolvedLinkData) : [];
+				resolvedMDLinkArr = resolvedLinkArr.filter((link) => link.endsWith(".md"));
 
-			let mergedLinks = [...resolvedMDLinkArr, ...urlFrontMatterLinks].map((link) => {
-				const isURL = urlPattern.test(link);
-				return {
-					fileName: this.getFilename(link, isURL),
-					uri: isURL ? link : this.getFilepathURI(link),
-				};
-			});
-
-			const command = `"/Users/viethung/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/Data/Apps/Alfred/Scripts/Obsidian/GetLinkData/GetLinkData" "mdLink" "${fullPath}"`;
-			try {
-				const { stdout } = await exec(command);
-				const goOutput = stdout ? JSON.parse(String(stdout)) : [];
-				if (Array.isArray(goOutput)) {
-					const convertedGoOutput = goOutput.map((link) => {
-						return {
+				const frontMatterLinks = fileMetadata?.frontmatter?.["links"] || [];
+				urlFrontMatterLinks = frontMatterLinks.filter((link: string) => urlPattern.test(link));
+				const getMDLinkCommand = `"/Users/viethung/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/Data/Apps/Alfred/Scripts/Obsidian/GetLinkData/GetLinkData" "mdLink" "${fullPath}"`;
+				try {
+					const { stdout } = await exec(getMDLinkCommand);
+					const goOutput = stdout ? JSON.parse(String(stdout)) : [];
+					if (Array.isArray(goOutput)) {
+						const convertedGoOutput = goOutput.map((link) => ({
 							fileName: link["Title"],
 							uri: link["Link"],
-						}
-					});
-					mergedLinks = [...mergedLinks, ...convertedGoOutput];
+						}));
+						mergedLinks = [...mergedLinks, ...convertedGoOutput];
+					}
+				} catch (error) {
+					console.error("Error executing Go binary or parsing output:", error);
 				}
-			} catch (error) {
-				console.error("Error executing Go binary or parsing output:", error);
+				mergedLinks = [...mergedLinks, ...resolvedMDLinkArr, ...urlFrontMatterLinks].map((link) => {
+					const isURL = urlPattern.test(link);
+					return {
+						fileName: this.getFilename(link, isURL),
+						uri: isURL ? link : this.getFilepathURI(link),
+					};
+				});
+			}
+
+			if (abstractFile.extension === "canvas") {
+				const getCanvasLinkCommand = `"/Users/viethung/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/Data/Apps/Alfred/Scripts/Obsidian/GetLinkData/GetLinkData" "canvasLink" "${fullPath}"`;
+				try {
+					const { stdout } = await exec(getCanvasLinkCommand);
+					const goOutput = stdout ? JSON.parse(String(stdout)) : [];
+					if (Array.isArray(goOutput)) {
+						const convertedGoOutput = goOutput.map((link) => ({
+							fileName: link["Title"],
+							uri: this.getFilepathURI(this.app.metadataCache.getFirstLinkpathDest(link["Link"], "")?.path || ""),
+						}));
+						mergedLinks = [...mergedLinks, ...convertedGoOutput];
+					}
+				} catch (error) {
+					console.error("Error executing Go binary or parsing output:", error);
+				}
 			}
 
 			resolvedLinks[key] = mergedLinks;
@@ -289,13 +304,12 @@ export default class PreviewDataPlugin extends Plugin {
 				return "";
 			}
 		} else {
-			// The link is a file path
 			return parse(link).name;
 		}
 	}
 
 	async getResolvedLinksOfActiveFile() {
-		const activeFile = this.getActiveMDFile();
+		const activeFile = this.app.workspace.getActiveFile();
 		if (activeFile instanceof TFile) {
 			this.settings.pathsToExtractMetadata[activeFile.name] = activeFile.path;
 			await this.saveSettings();
