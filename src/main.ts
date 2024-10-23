@@ -215,7 +215,7 @@ export default class MoreDataPlugin extends Plugin {
 	}
 
 	async getResolvedLinks(filepaths: Record<string, string>, filepathData: string = "/Users/viethung/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/.obsidian/plugins/more-data/resolvedLinks.json", successCallback?: () => void) {
-		const resolvedLinks: Record<string, any[]> = {};
+		const resolvedLinks: Record<string, any> = {};
 		const urlPattern = /^https?:\/\//i;
 		const basePath = this.app.vault.getRoot().vault.adapter.basePath;
 
@@ -287,7 +287,10 @@ export default class MoreDataPlugin extends Plugin {
 				}
 			}
 
-			resolvedLinks[key] = this.getUniqueLinksByUri(mergedLinks);
+			resolvedLinks[key] = {
+				uri: this.getFilepathURI(path),
+				resolvedLinks: mergedLinks,
+			};
 		}
 
 		const jsonData = JSON.stringify(resolvedLinks, null, 2);
