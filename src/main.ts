@@ -239,6 +239,16 @@ export default class MoreDataPlugin extends Plugin {
 
 				const frontMatterLinks = fileMetadata?.frontmatter?.["links"] || [];
 				urlFrontMatterLinks = frontMatterLinks.filter((link: string) => urlPattern.test(link));
+
+				mergedLinks = [...mergedLinks, ...resolvedMDLinkArr, ...urlFrontMatterLinks].map((link) => {
+					const isURL = urlPattern.test(link);
+					return {
+						fileName: this.getFilename(link, isURL),
+						uri: isURL ? link : this.getFilepathURI(link),
+						uriGetResolvedLinkOfSelected: isURL ? "" : this.getResolvedLinksOfSelectedURI(link)
+					};
+				});
+
 				const getMDLinkCommand = `"/Users/viethung/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/Data/Apps/Alfred/Scripts/Obsidian/GetLinkData/GetLinkData" "mdLink" "${fullPath}"`;
 				try {
 					const { stdout } = await exec(getMDLinkCommand);
@@ -254,14 +264,6 @@ export default class MoreDataPlugin extends Plugin {
 				} catch (error) {
 					console.error("Error executing Go binary or parsing output:", error);
 				}
-				mergedLinks = [...mergedLinks, ...resolvedMDLinkArr, ...urlFrontMatterLinks].map((link) => {
-					const isURL = urlPattern.test(link);
-					return {
-						fileName: this.getFilename(link, isURL),
-						uri: isURL ? link : this.getFilepathURI(link),
-						uriGetResolvedLinkOfSelected: isURL ? "" : this.getResolvedLinksOfSelectedURI(link)
-					};
-				});
 			}
 
 			if (abstractFile.extension === "canvas") {
