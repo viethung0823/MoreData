@@ -46,7 +46,7 @@ export default class MoreDataPlugin extends Plugin {
 			id: "get-resolved-links",
 			name: "Get Resolved Links",
 			callback: async () => {
-				this.getResolvedLinks();
+				this.getResolvedLinks(this.settings.pathsToExtractMetadata);
 			},
 		});
 
@@ -55,6 +55,14 @@ export default class MoreDataPlugin extends Plugin {
 			name: "Get Resolved Links Of Active File",
 			callback: async () => {
 				this.getResolvedLinksOfActiveFile();
+			},
+		});
+
+		this.addCommand({
+			id: "get_resolved_links_of_selected_file",
+			name: "Get Resolved Links Of Selected File",
+			callback: async () => {
+				this.getResolvedLinksOfSelectedFile();
 			},
 		});
 
@@ -206,12 +214,12 @@ export default class MoreDataPlugin extends Plugin {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 	}
 
-	async getResolvedLinks() {
+	async getResolvedLinks(filepaths: Record<string, string>, filepathData: string = "/Users/viethung/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/.obsidian/plugins/more-data/resolvedLinks.json", successCallback?: () => void) {
 		const resolvedLinks: Record<string, any[]> = {};
 		const urlPattern = /^https?:\/\//i;
 		const basePath = this.app.vault.getRoot().vault.adapter.basePath;
 
-		for (const [key, path] of Object.entries(this.settings.pathsToExtractMetadata)) {
+		for (const [key, path] of Object.entries(filepaths)) {
 			const abstractFile = this.app.vault.getAbstractFileByPath(path);
 			if (!(abstractFile instanceof TFile)) {
 				console.error(`File not found or not a TFile: ${path}`);
@@ -239,6 +247,7 @@ export default class MoreDataPlugin extends Plugin {
 						const convertedGoOutput = goOutput.map((link) => ({
 							fileName: link["Title"],
 							uri: link["Link"],
+							uriGetResolvedLinkOfSelected: "",
 						}));
 						mergedLinks = [...mergedLinks, ...convertedGoOutput];
 					}
@@ -250,6 +259,7 @@ export default class MoreDataPlugin extends Plugin {
 					return {
 						fileName: this.getFilename(link, isURL),
 						uri: isURL ? link : this.getFilepathURI(link),
+						uriGetResolvedLinkOfSelected: isURL ? "" : this.getResolvedLinksOfSelectedURI(link)
 					};
 				});
 			}
@@ -260,10 +270,14 @@ export default class MoreDataPlugin extends Plugin {
 					const { stdout } = await exec(getCanvasLinkCommand);
 					const goOutput = stdout ? JSON.parse(String(stdout)) : [];
 					if (Array.isArray(goOutput)) {
-						const convertedGoOutput = goOutput.map((link) => ({
-							fileName: link["Title"],
-							uri: this.getFilepathURI(this.app.metadataCache.getFirstLinkpathDest(link["Link"], "")?.path || ""),
-						}));
+						const convertedGoOutput = goOutput.map((link) => {
+							const absolutePath = this.app.metadataCache.getFirstLinkpathDest(link["Link"], "")?.path || "";
+							return {
+								fileName: link["Title"],
+								uri: this.getFilepathURI(absolutePath),
+								uriGetResolvedLinkOfSelected: this.getResolvedLinksOfSelectedURI(absolutePath),
+							}
+						});
 						mergedLinks = [...mergedLinks, ...convertedGoOutput];
 					}
 				} catch (error) {
@@ -275,14 +289,15 @@ export default class MoreDataPlugin extends Plugin {
 		}
 
 		const jsonData = JSON.stringify(resolvedLinks, null, 2);
-		const filePath = "/Users/viethung/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/.obsidian/plugins/more-data/resolvedLinks.json";
-
-		writeFile(filePath, jsonData, (err) => {
+		writeFile(filepathData, jsonData, (err) => {
 			if (err) {
 				console.error("Error writing to file:", err);
 			} else {
-				new Notice("Resolved links saved to resolvedLinks.json");
-				console.log("Resolved links saved to resolvedLinks.json");
+				new Notice("Resolved links saved!");
+				console.log("Resolved links saved!");
+				if (successCallback) {
+					successCallback();
+				}
 			}
 		});
 	}
@@ -302,6 +317,12 @@ export default class MoreDataPlugin extends Plugin {
 	getFilepathURI(filePath: string): string {
 		const encodedFilePath = encodeURIComponent(filePath);
 		return `obsidian://adv-uri?vault=${encodeURIComponent("Vault")}&filepath=${encodedFilePath}`;
+	}
+
+	getResolvedLinksOfSelectedURI(filePath: string): string {
+		const encodedFilePath = encodeURIComponent(filePath);
+		const commandid = "more-data:get_resolved_links_of_selected_file";
+		return `obsidian://adv-uri?vault=${encodeURIComponent("Vault")}&selectedFilepath=${encodedFilePath}&commandid=${commandid}`;
 	}
 
 	getFilename(link: string, isURL: boolean): string {
@@ -325,7 +346,20 @@ export default class MoreDataPlugin extends Plugin {
 		if (activeFile instanceof TFile) {
 			this.settings.pathsToExtractMetadata[activeFile.name] = activeFile.path;
 			await this.saveSettings();
-			this.getResolvedLinks();
+			this.getResolvedLinks(this.settings.pathsToExtractMetadata);
+		}
+	}
+
+	async getResolvedLinksOfSelectedFile() {
+		const data = this.app.plugins.plugins["obsidian-advanced-uri"].lastParameters as { selectedFilepath?: string };
+		if (data?.selectedFilepath) {
+			const selectedFilePath = {
+				"obsidian:ShowResolvedLinks:getResolvedLinksOfSelected": data?.selectedFilepath,
+			}
+			const successCallback = () => {
+				open("alfred://runtrigger/viethung0823.scripts/actions/?argument=obsidian%3AShowResolvedLinks%3AgetResolvedLinksOfSelected");
+			}
+			this.getResolvedLinks(selectedFilePath, "/Users/viethung/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/.obsidian/plugins/more-data/resolvedLinksOfSelectedFile.json", successCallback);
 		}
 	}
 }
