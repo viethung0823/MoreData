@@ -9,7 +9,7 @@ import { promisify } from "util";
 
 const exec = promisify(execCallback);
 
-export default class PreviewDataPlugin extends Plugin {
+export default class MoreDataPlugin extends Plugin {
 	settings: MoreDataSettings;
 	activeLeaf: WorkspaceLeaf | null = null;
 	workspace = this.app.workspace;
@@ -271,7 +271,7 @@ export default class PreviewDataPlugin extends Plugin {
 				}
 			}
 
-			resolvedLinks[key] = mergedLinks;
+			resolvedLinks[key] = this.getUniqueLinksByUri(mergedLinks);
 		}
 
 		const jsonData = JSON.stringify(resolvedLinks, null, 2);
@@ -286,6 +286,18 @@ export default class PreviewDataPlugin extends Plugin {
 			}
 		});
 	}
+
+	getUniqueLinksByUri(links: { fileName: string, uri: string }[]): { fileName: string, uri: string }[] {
+    const seenUris = new Set<string>();
+    return links.filter(link => {
+        if (seenUris.has(link.uri)) {
+            return false;
+        } else {
+            seenUris.add(link.uri);
+            return true;
+        }
+    });
+}
 
 	getFilepathURI(filePath: string): string {
 		const encodedFilePath = encodeURIComponent(filePath);

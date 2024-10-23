@@ -1,12 +1,12 @@
 import {Modal, App, ButtonComponent, TFile, Notice} from "obsidian";
-import PreviewDataPlugin from "src/main";
+import MoreDataPlugin from "src/main";
 import {GenericTextSuggester} from "src/utils/generticTextSuggester";
 
 export class CreateDataViewFileModal extends Modal {
 	result: string;
 	onSubmit: (result: string) => void;
 
-	constructor(app: App, private plugin: PreviewDataPlugin, onSubmit: (result: string) => void) {
+	constructor(app: App, private plugin: MoreDataPlugin, onSubmit: (result: string) => void) {
 		super(app);
 		this.onSubmit = onSubmit;
 	}

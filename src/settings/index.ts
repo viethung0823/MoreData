@@ -1,4 +1,4 @@
-import PreviewDataPlugin from "src/main";
+import MoreDataPlugin from "src/main";
 import { PluginSettingTab, App, Setting, TFolder, TFile } from "obsidian";
 import { GenericTextSuggester } from "src/utils/generticTextSuggester";
 import JSONEditor from "jsoneditor";
@@ -22,9 +22,9 @@ export const DEFAULT_SETTINGS: MoreDataSettings = {
 };
 
 export class MoreDataSettingTab extends PluginSettingTab {
-	plugin: PreviewDataPlugin;
+	plugin: MoreDataPlugin;
 
-	constructor(app: App, plugin: PreviewDataPlugin) {
+	constructor(app: App, plugin: MoreDataPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
