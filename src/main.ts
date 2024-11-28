@@ -216,7 +216,6 @@ export default class MoreDataPlugin extends Plugin {
 
 	async getResolvedLinks(filepaths: Record<string, string>, filepathData: string = "/Users/viethung/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/.obsidian/plugins/more-data/resolvedLinks.json", successCallback?: () => void) {
 		const resolvedLinks: Record<string, any> = {};
-		const urlPattern = /^https?:\/\//i;
 		const basePath = this.app.vault.getRoot().vault.adapter.basePath;
 
 		for (const [key, path] of Object.entries(filepaths)) {
@@ -227,7 +226,6 @@ export default class MoreDataPlugin extends Plugin {
 			}
 			const fullPath = `${basePath}/${path}`;
 			let resolvedMDLinkArr: string[] = [];
-			let urlFrontMatterLinks: string[] = [];
 			let mergedLinks: any[] = [];
 
 			if (abstractFile.extension === "md") {
@@ -238,14 +236,13 @@ export default class MoreDataPlugin extends Plugin {
 				resolvedMDLinkArr = resolvedLinkArr.filter((link) => link.endsWith(".md"));
 
 				const frontMatterLinks = fileMetadata?.frontmatter?.["links"] || [];
-				urlFrontMatterLinks = frontMatterLinks.filter((link: string) => urlPattern.test(link));
 
-				mergedLinks = [...mergedLinks, ...resolvedMDLinkArr, ...urlFrontMatterLinks].map((link) => {
-					const isURL = urlPattern.test(link);
+				mergedLinks = [...mergedLinks, ...resolvedMDLinkArr, ...frontMatterLinks].map((link) => {
+					const isFilePath = this.isFilePath(link);
 					return {
-						fileName: this.getFilename(link, isURL),
-						uri: isURL ? link : this.getFilepathURI(link),
-						uriGetResolvedLinkOfSelected: isURL ? "" : this.getResolvedLinksOfSelectedURI(link)
+						fileName: this.getFilename(link),
+						uri: isFilePath ? this.getFilepathURI(link) : link,
+						uriGetResolvedLinkOfSelected: isFilePath ? this.getResolvedLinksOfSelectedURI(link) : "",
 					};
 				});
 
@@ -330,20 +327,42 @@ export default class MoreDataPlugin extends Plugin {
 		return `obsidian://adv-uri?vault=${encodeURIComponent("Vault")}&selectedFilepath=${encodedFilePath}&commandid=${commandid}`;
 	}
 
-	getFilename(link: string, isURL: boolean): string {
-		if (isURL) {
+	getFilename(link: string): string {
+		if (this.isFilePath(link)) {
+			return parse(link).name;
+		} else {
 			try {
 				const parsedURL = new URL(link);
 				const pathname = parsedURL.pathname;
 				const segments = pathname.split("/");
-				return segments.length > 1 ? segments.pop() || segments.pop() || "" : "";
+				const mainSegment = segments.length > 1 ? segments.pop() || segments.pop() || "" : "";
+
+				const argument = parsedURL.searchParams.get("argument");
+				const decodedArgument = argument ? decodeURIComponent(argument) : "";
+
+				return decodedArgument ? `${mainSegment} (${decodedArgument})` : mainSegment;
 			} catch (error) {
 				console.error("Invalid URL:", error);
 				return "";
 			}
-		} else {
-			return parse(link).name;
 		}
+	}
+
+	isURLorScheme(str: string) {
+    try {
+        new URL(str);
+        return true;
+    } catch (_) {
+        return false;
+    }
+	}
+
+	isFilePath(str: string) {
+    if (this.isURLorScheme(str)) {
+        return false;
+    }
+
+    return true;
 	}
 
 	async getResolvedLinksOfActiveFile() {
