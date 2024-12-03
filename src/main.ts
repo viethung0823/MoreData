@@ -66,6 +66,14 @@ export default class MoreDataPlugin extends Plugin {
 			},
 		});
 
+		this.addCommand({
+			id: "get_resolved_links_from_active_workspace",
+			name: "Get Resolved Links From Active Workspace",
+			callback: async () => {
+				this.getResolvedLinksFromActiveWorkspace();
+			},
+		});
+
 		this.registerView(MORE_DATA_VIEW_TYPE, (leaf) => new MoreDataView(leaf));
 
 		this.registerEvent(
@@ -314,7 +322,7 @@ export default class MoreDataPlugin extends Plugin {
             return true;
         }
     });
-}
+	}
 
 	getFilepathURI(filePath: string): string {
 		const encodedFilePath = encodeURIComponent(filePath);
@@ -385,5 +393,28 @@ export default class MoreDataPlugin extends Plugin {
 			}
 			this.getResolvedLinks(selectedFilePath, "/Users/viethung/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/.obsidian/plugins/more-data/resolvedLinksOfSelectedFile.json", successCallback);
 		}
+	}
+
+	async getResolvedLinksFromActiveWorkspace() {
+    const workspacesDataPath = ".obsidian/workspaces.json";
+
+    const workspacesData = JSON.parse(await this.app.vault.adapter.read(workspacesDataPath));
+
+    const activeWorkspaceName = workspacesData.active;
+    const activeWorkspace = workspacesData.workspaces[activeWorkspaceName].main.children;
+
+    const activeWorkspacePaths: Record<string, string> = {};
+    activeWorkspace.forEach((tabGroup: { children: { state: any; }[]; }) => {
+        tabGroup.children.forEach((tab: { state: any; }) => {
+            const state = tab.state;
+            if (state.type === 'markdown' || state.type === 'canvas') {
+                activeWorkspacePaths[state.title] = state.state.file;
+            }
+        });
+    });
+
+    this.settings.pathsToExtractMetadata = activeWorkspacePaths;
+    await this.saveSettings();
+    this.getResolvedLinks(this.settings.pathsToExtractMetadata);
 	}
 }
