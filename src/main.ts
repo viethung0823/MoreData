@@ -74,6 +74,14 @@ export default class MoreDataPlugin extends Plugin {
 			},
 		});
 
+		this.addCommand({
+			id: "store_active_file_path",
+			name: "Store active file path",
+			callback: async () => {
+				this.storeActiveFilePath();
+			},
+		});
+
 		this.registerView(MORE_DATA_VIEW_TYPE, (leaf) => new MoreDataView(leaf));
 
 		this.registerEvent(
@@ -416,5 +424,24 @@ export default class MoreDataPlugin extends Plugin {
     this.settings.pathsToExtractMetadata = activeWorkspacePaths;
     await this.saveSettings();
     this.getResolvedLinks(this.settings.pathsToExtractMetadata);
+	}
+
+	async storeActiveFilePath() {
+		const activeDataFilePath = "/Users/viethung/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/Data/json/Obsidian/activeData.json";
+		const activeFile = this.app.workspace.getActiveFile();
+		const successMsg = "Active file path updated!";
+		if (activeFile instanceof TFile) {
+			const jsonData = {
+				activeFile: activeFile.path
+			};
+			writeFile(activeDataFilePath, JSON.stringify(jsonData, null, 2), (err) => {
+				if (err) {
+					console.error("Error writing to file:", err);
+				} else {
+					new Notice(successMsg);
+					console.log(successMsg);
+				}
+			});
+		}
 	}
 }
