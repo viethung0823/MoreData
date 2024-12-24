@@ -75,10 +75,10 @@ export default class MoreDataPlugin extends Plugin {
 		});
 
 		this.addCommand({
-			id: "store_active_file_path",
-			name: "Store active file path",
+			id: "update_active_logs",
+			name: "Update Active Logs",
 			callback: async () => {
-				this.storeActiveFilePath();
+				this.updateActiveLogs();
 			},
 		});
 
@@ -426,15 +426,15 @@ export default class MoreDataPlugin extends Plugin {
     this.getResolvedLinks(this.settings.pathsToExtractMetadata);
 	}
 
-	async storeActiveFilePath() {
-		const activeDataFilePath = "/Users/viethung/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/Data/json/Obsidian/activeData.json";
+	async updateActiveLogs() {
+		const activeLogsFilePath = "/Users/viethung/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/Data/json/Obsidian/activeLogs.json";
 		const activeFile = this.app.workspace.getActiveFile();
 		const successMsg = "Active file path updated!";
 		if (activeFile instanceof TFile) {
 			const jsonData = {
 				activeFile: activeFile.path
 			};
-			writeFile(activeDataFilePath, JSON.stringify(jsonData, null, 2), (err) => {
+			writeFile(activeLogsFilePath, JSON.stringify(jsonData, null, 2), (err) => {
 				if (err) {
 					console.error("Error writing to file:", err);
 				} else {
