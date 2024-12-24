@@ -432,7 +432,7 @@ export default class MoreDataPlugin extends Plugin {
 		const successMsg = "Active file path updated!";
 		if (activeFile instanceof TFile) {
 			const jsonData = {
-				activeFile: activeFile.path
+				filepath: activeFile.path
 			};
 			writeFile(activeLogsFilePath, JSON.stringify(jsonData, null, 2), (err) => {
 				if (err) {
