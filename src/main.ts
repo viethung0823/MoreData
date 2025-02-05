@@ -251,7 +251,7 @@ export default class MoreDataPlugin extends Plugin {
 				const resolvedLinkArr = Object.keys(resolvedLinkData).length > 0 ? Object.keys(resolvedLinkData) : [];
 				resolvedMDLinkArr = resolvedLinkArr.filter((link) => link.endsWith(".md"));
 
-				const frontMatterLinks = fileMetadata?.frontmatter?.["links"] || [];
+				const frontMatterLinks = fileMetadata?.frontmatter?.["links"]?.filter((l: string) => this.isURLorScheme(l)) || [];
 
 				mergedLinks = [...mergedLinks, ...resolvedMDLinkArr, ...frontMatterLinks].map((link) => {
 					const isFilePath = this.isFilePath(link);
