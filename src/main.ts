@@ -8,7 +8,13 @@ import { exec as execCallback } from "child_process";
 import { promisify } from "util";
 
 const exec = promisify(execCallback);
+const homeDir = process.env.HOME || process.env.USERPROFILE;
+let obsidianConfigDir = ".obsidian";
 
+if (!homeDir?.includes("viethung")) {
+    obsidianConfigDir = ".obsidian_second_mac";
+}
+const defaultFilepathData = `${homeDir}/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/${obsidianConfigDir}/plugins/more-data/resolvedLinks.json`
 export default class MoreDataPlugin extends Plugin {
 	settings: MoreDataSettings;
 	activeLeaf: WorkspaceLeaf | null = null;
@@ -230,7 +236,7 @@ export default class MoreDataPlugin extends Plugin {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 	}
 
-	async getResolvedLinks(filepaths: Record<string, string>, filepathData: string = "/Users/viethung/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/.obsidian/plugins/more-data/resolvedLinks.json", successCallback?: () => void) {
+	async getResolvedLinks(filepaths: Record<string, string>, filepathData: string = defaultFilepathData, successCallback?: () => void) {
 		const resolvedLinks: Record<string, any> = {};
 		const basePath = this.app.vault.getRoot().vault.adapter.basePath;
 
@@ -262,7 +268,7 @@ export default class MoreDataPlugin extends Plugin {
 					};
 				});
 
-				const getMDLinkCommand = `"/Users/viethung/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/Data/Apps/Alfred/Scripts/Obsidian/GetLinkData/GetLinkData" "mdLink" "${fullPath}"`;
+				const getMDLinkCommand = `"${homeDir}/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/Data/Apps/Alfred/Scripts/Obsidian/GetLinkData/GetLinkData" "mdLink" "${fullPath}"`;
 				try {
 					const { stdout } = await exec(getMDLinkCommand);
 					const goOutput = stdout ? JSON.parse(String(stdout)) : [];
@@ -280,7 +286,7 @@ export default class MoreDataPlugin extends Plugin {
 			}
 
 			if (abstractFile.extension === "canvas") {
-				const getCanvasLinkCommand = `"/Users/viethung/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/Data/Apps/Alfred/Scripts/Obsidian/GetLinkData/GetLinkData" "canvasLink" "${fullPath}"`;
+				const getCanvasLinkCommand = `"${homeDir}/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/Data/Apps/Alfred/Scripts/Obsidian/GetLinkData/GetLinkData" "canvasLink" "${fullPath}"`;
 				try {
 					const { stdout } = await exec(getCanvasLinkCommand);
 					const goOutput = stdout ? JSON.parse(String(stdout)) : [];
@@ -347,20 +353,7 @@ export default class MoreDataPlugin extends Plugin {
 		if (this.isFilePath(link)) {
 			return parse(link).name;
 		} else {
-			try {
-				const parsedURL = new URL(link);
-				const pathname = parsedURL.pathname;
-				const segments = pathname.split("/");
-				const mainSegment = segments.length > 1 ? segments.pop() || segments.pop() || "" : "";
-
-				const argument = parsedURL.searchParams.get("argument");
-				const decodedArgument = argument ? decodeURIComponent(argument) : "";
-
-				return decodedArgument ? `${mainSegment} (${decodedArgument})` : mainSegment;
-			} catch (error) {
-				console.error("Invalid URL:", error);
-				return "";
-			}
+			return link
 		}
 	}
 
@@ -399,12 +392,13 @@ export default class MoreDataPlugin extends Plugin {
 			const successCallback = () => {
 				open("alfred://runtrigger/viethung0823.scripts/actions/?argument=obsidian%3AShowResolvedLinks%3AgetResolvedLinksOfSelected");
 			}
-			this.getResolvedLinks(selectedFilePath, "/Users/viethung/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/.obsidian/plugins/more-data/resolvedLinksOfSelectedFile.json", successCallback);
+			const path = `${homeDir}/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/${obsidianConfigDir}/plugins/more-data/resolvedLinksOfSelectedFile.json`
+			this.getResolvedLinks(selectedFilePath, path, successCallback);
 		}
 	}
 
 	async getResolvedLinksFromActiveWorkspace() {
-    const workspacesDataPath = ".obsidian/workspaces.json";
+    const workspacesDataPath = `${obsidianConfigDir}/workspaces.json`;
 
     const workspacesData = JSON.parse(await this.app.vault.adapter.read(workspacesDataPath));
 
@@ -427,7 +421,7 @@ export default class MoreDataPlugin extends Plugin {
 	}
 
 	async updateActiveLogs() {
-		const activeLogsFilePath = "/Users/viethung/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/Data/json/Obsidian/activeLogs.json";
+		const activeLogsFilePath = `${homeDir}/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/Data/json/Obsidian/activeLogs.json`;
 		const activeFile = this.app.workspace.getActiveFile();
 		const successMsg = "Active file path updated!";
 		if (activeFile instanceof TFile) {
