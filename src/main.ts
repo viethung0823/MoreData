@@ -88,14 +88,6 @@ export default class MoreDataPlugin extends Plugin {
 			},
 		});
 
-		this.addCommand({
-			id: "update_active_logs_of_selected_file",
-			name: "Update Active Logs Of Selected File",
-			callback: async () => {
-				this.updateActiveLogsOfSelectedFile();
-			},
-		});
-
 		this.registerView(MORE_DATA_VIEW_TYPE, (leaf) => new MoreDataView(leaf));
 
 		this.registerEvent(
@@ -435,25 +427,6 @@ export default class MoreDataPlugin extends Plugin {
 		if (activeFile instanceof TFile) {
 			const jsonData = {
 				filepath: activeFile.path
-			};
-			writeFile(activeLogsFilePath, JSON.stringify(jsonData, null, 2), (err) => {
-				if (err) {
-					console.error("Error writing to file:", err);
-				} else {
-					new Notice(successMsg);
-					console.log(successMsg);
-				}
-			});
-		}
-	}
-
-	async updateActiveLogsOfSelectedFile() {
-		const activeLogsFilePath = `${homeDir}/Library/Mobile Documents/iCloud~md~obsidian/Documents/Vault/Data/json/Obsidian/activeLogs.json`;
-		const data = this.app.plugins.plugins["obsidian-advanced-uri"].lastParameters as { selectedFilepath?: string };
-		const successMsg = "Active file path updated!";
-		if (data?.selectedFilepath) {
-			const jsonData = {
-				filepath: data?.selectedFilepath
 			};
 			writeFile(activeLogsFilePath, JSON.stringify(jsonData, null, 2), (err) => {
 				if (err) {
